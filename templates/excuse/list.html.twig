@@ -1,0 +1,25 @@
+{% extends "base.html.twig" %}
+{% block title %}
+    Liste des excuses
+{% endblock %}
+
+{% block body %}
+        <table class="display" id="myTable">
+            <thead>
+                <tr>
+                   <th> HTTP_CODE</th>
+                    <th> TAG </th>
+                    <th> MESSAGE </th>
+                </tr>
+
+    {% for excuse in excuse %}
+            <tbody>
+            <tr>
+                <th> {{excuse.httpcode}}</th>
+                <th> {{excuse.tag}}</th>
+                <th>{{excuse.message}}</th>
+            </tr>
+            </tbody>
+        </table>
+    {% endfor %}
+{% endblock %}

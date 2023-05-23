@@ -64,4 +64,5 @@ class Excuse
 
         return $this;
     }
+
 }

@@ -3,8 +3,12 @@
 namespace App\Controller;
 
 use App\Repository\ExcuseRepository;
+use App\Entity\Excuse;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -28,13 +32,28 @@ class ExcuseController extends AbstractController
         return  $this->render('excuse/lost.html.twig', []);
     }
 
-    #[Route('/$http_code', name: 'app_excuse')]
-    public function http_code(): Response
+    #[Route('/excuse/{http_code}', name: 'app_excuse' , methods: ['GET'])]
+    public function show(int $http_code,ManagerRegistry $doctrine): Response
     {
+        $excuseRepository = $doctrine->getRepository(Excuse::class);
+        $excuse = $excuseRepository->findOneBy(['http_code' => $http_code]);
+        if (!$excuse){
+            throw $this->createNotFoundException("$http_code no excuse for this code");
+        }
+        $data = [
+            'excuse'=>$excuse,
+        ];
+        return $this->render('excuse/http_code.html.twig',$data);
+    }
 
-        return $this->render('excuse/http_code.html.twig', [
-            'controller_name' => 'ExcuseController',
-        ]);
+    #[Route('/list', name: 'app_excuse_list' , methods: ['GET'])]
+    public function showAll(ExcuseRepository $excuseRepository): Response
+    {
+        $excuse = $excuseRepository->findAll();
+
+        return $this->render('excuse/list.html.twig', [
+           'excuse' => $excuse,
+       ]);
     }
 
 }
