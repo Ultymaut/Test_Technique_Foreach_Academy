@@ -71,30 +71,62 @@ class ExcuseController extends AbstractController
         return $this->render('excuse/http_code.html.twig',$data);
     }
 
-    #[Route('/excuse/list', name: 'app_excuse_list' , methods: ['GET'])]
-    public function showAll(ExcuseRepository $excuseRepository,PaginatorInterface $paginator, Request $request): Response
+
+    /**
+     * @param ExcuseRepository $excuseRepository
+     * @param PaginatorInterface $paginator
+     * @param Request $request
+     * @param EntityManagerInterface $manager
+     * @return Response
+     */
+    #[Route('/excuse/list', name: 'app_excuse_list' , methods: ['GET','POST'])]
+    public function showAll(ExcuseRepository $excuseRepository,PaginatorInterface $paginator, Request $request,EntityManagerInterface $manager): Response
     {
+        $new = new Excuse();
+        $form = $this->createForm(ExcuseNewType::class, $new);
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $new = $form->getData();
+            $manager->persist($new);
+            $manager->flush();
+            // do some sort of processing
+            $this->addFlash(
+                'success',
+                'l\'excuse à été créé avec succès !'
+            );
+
+            return $this->redirectToRoute('app_excuse_list');
+        }
+
         $excuse = $paginator->paginate(
             $excuseRepository->findAll(),
             $request->query->getInt('page', 1),
             10,
         );
+
         return $this->render('excuse/list.html.twig', [
             'excuse' => $excuse,
+            'form'=>$form->createView(),
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @param EntityManagerInterface $manager
+     * @return Response
+     */
     #[Route('/excuse/new', name: 'app_excuse_new' , methods: ['GET','POST'])]
-    public function new(Request $request,EntityManagerInterface $manager): Response
+    public function new(Request $request, EntityManagerInterface $manager): Response
     {
 
-        $excuse = new Excuse();
-        $form = $this->createForm(ExcuseNewType::class, $excuse);
+        $new = new Excuse();
+        $form = $this->createForm(ExcuseNewType::class, $new);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $excuse = $form->getData();
-            $manager->persist($excuse);
+            $new = $form->getData();
+            $manager->persist($new);
             $manager->flush();
             // do some sort of processing
             $this->addFlash(
@@ -107,6 +139,7 @@ class ExcuseController extends AbstractController
 
         return $this->render('excuse/new.html.twig',
             [
+                'excuse' => $new,
                 'form' => $form->createView()
             ]);
 
