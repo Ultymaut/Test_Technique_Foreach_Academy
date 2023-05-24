@@ -2,15 +2,16 @@
 
 namespace App\Controller;
 
+use App\Form\ExcuseNewType;
 use App\Repository\ExcuseRepository;
 use App\Entity\Excuse;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\NoResultException;
 use Doctrine\Persistence\ManagerRegistry;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -19,9 +20,10 @@ class ExcuseController extends AbstractController
 {
 
     #[Route('/', name: 'app_excuse_index', methods: ['GET'])]
-    public function index(ExcuseRepository $excuseRepository): Response
+    public function index(ExcuseRepository $excuseRepository, PaginatorInterface $paginator, Request $request): Response
     {
-        $excuse = $excuseRepository->findAll();
+        $excuse=$excuseRepository->findAll();
+
 
         return $this->render('excuse/index.html.twig', [
             "excuse"=>$excuse,
@@ -32,7 +34,7 @@ class ExcuseController extends AbstractController
      * @throws NonUniqueResultException
      * @throws NoResultException
      */
-    #[Route('/random', name: 'app_excuse_rand', methods: ['GET'])]
+    #[Route('/excuse/random', name: 'app_excuse_rand', methods: ['GET'])]
     public function random(ManagerRegistry $doctrine){
         $excuseRepository = $doctrine->getRepository(Excuse::class);
         $excuseCount = $excuseRepository->createQueryBuilder('e')
@@ -55,7 +57,7 @@ class ExcuseController extends AbstractController
         return  $this->render('excuse/lost.html.twig', []);
     }
 
-    #[Route('/excuse/{http_code}', name: 'app_excuse' , methods: ['GET'])]
+    #[Route('/excuse/code/{http_code}', name: 'app_excuse' , methods: ['GET'])]
     public function show(int $http_code,ManagerRegistry $doctrine): Response
     {
         $excuseRepository = $doctrine->getRepository(Excuse::class);
@@ -69,14 +71,90 @@ class ExcuseController extends AbstractController
         return $this->render('excuse/http_code.html.twig',$data);
     }
 
-    #[Route('/list', name: 'app_excuse_list' , methods: ['GET'])]
-    public function showAll(ExcuseRepository $excuseRepository): Response
+    #[Route('/excuse/list', name: 'app_excuse_list' , methods: ['GET'])]
+    public function showAll(ExcuseRepository $excuseRepository,PaginatorInterface $paginator, Request $request): Response
     {
-        $excuse = $excuseRepository->findAll();
-
+        $excuse = $paginator->paginate(
+            $excuseRepository->findAll(),
+            $request->query->getInt('page', 1),
+            10,
+        );
         return $this->render('excuse/list.html.twig', [
-           'excuse' => $excuse,
-       ]);
+            'excuse' => $excuse,
+        ]);
     }
 
+    #[Route('/excuse/new', name: 'app_excuse_new' , methods: ['GET','POST'])]
+    public function new(Request $request,EntityManagerInterface $manager): Response
+    {
+
+        $excuse = new Excuse();
+        $form = $this->createForm(ExcuseNewType::class, $excuse);
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $excuse = $form->getData();
+            $manager->persist($excuse);
+            $manager->flush();
+            // do some sort of processing
+            $this->addFlash(
+                'success',
+                'l\'excuse à été créé avec succès !'
+            );
+
+            return $this->redirectToRoute('app_excuse_list');
+        }
+
+        return $this->render('excuse/new.html.twig',
+            [
+                'form' => $form->createView()
+            ]);
+
+    }
+    #[Route ('/excuse/modif/{id}', name : 'excuse_modif' , methods: ['GET', 'POST'])]
+    public function edit(Excuse $excuse, Request $request, EntityManagerInterface $manager) : Response
+    {
+
+
+        $form = $this->createForm(ExcuseNewType::class, $excuse);
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $excuse = $form->getData();
+            $manager->persist($excuse);
+            $manager->flush();
+            // do some sort of processing
+            $this->addFlash(
+                'success',
+                'L\'excuse à été modifier avec succès !'
+            );
+
+            return $this->redirectToRoute('app_excuse_list');
+        }
+
+        return $this->render('excuse/modif.html.twig',
+            [
+                'form' => $form->createView()
+            ]);
+    }
+    #[Route('/excuse/delete/{id}' , 'excuse_delete', methods: ['GET'])]
+    public function delete(EntityManagerInterface $manager , Excuse $excuse) :Response
+    {
+
+        if (!$excuse){
+            $this->addFlash(
+                'warning',
+                "L'user n'a pas été trouvé!"
+            );
+            return $this->redirectToRoute('user.app_excuse_index');
+        }
+
+        $manager->remove($excuse);
+        $manager->flush();
+        $this->addFlash(
+            'success',
+            'L\'excuse à été supprimé avec succès !'
+        );
+        return $this->redirectToRoute('app_excuse_index');
+    }
 }
