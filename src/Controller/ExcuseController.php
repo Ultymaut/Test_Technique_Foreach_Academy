@@ -5,8 +5,11 @@ namespace App\Controller;
 use App\Repository\ExcuseRepository;
 use App\Entity\Excuse;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\NoResultException;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,13 +17,33 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ExcuseController extends AbstractController
 {
-    #[Route('/', name: 'app_excuse_index')]
+
+    #[Route('/', name: 'app_excuse_index', methods: ['GET'])]
     public function index(ExcuseRepository $excuseRepository): Response
     {
-        $excuseRepository->findAll();
+        $excuse = $excuseRepository->findAll();
 
         return $this->render('excuse/index.html.twig', [
+            "excuse"=>$excuse,
+        ]);
+    }
 
+    /**
+     * @throws NonUniqueResultException
+     * @throws NoResultException
+     */
+    #[Route('/random', name: 'app_excuse_rand', methods: ['GET'])]
+    public function random(ManagerRegistry $doctrine){
+        $excuseRepository = $doctrine->getRepository(Excuse::class);
+        $excuseCount = $excuseRepository->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $randomId = rand(1, $excuseCount);
+        $excuse = $excuseRepository->find($randomId);
+        return new JsonResponse([
+            'message' => $excuse->getMessage()
         ]);
     }
 

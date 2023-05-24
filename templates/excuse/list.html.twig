@@ -15,11 +15,12 @@
     {% for excuse in excuse %}
             <tbody>
             <tr>
-                <th> {{excuse.httpcode}}</th>
-                <th> {{excuse.tag}}</th>
-                <th>{{excuse.message}}</th>
+                <td> {{excuse.httpcode}}</td>
+                <td> {{excuse.tag}}</td>
+                <td>{{excuse.message}}</td>
             </tr>
             </tbody>
+            {% endfor %}
         </table>
-    {% endfor %}
+
 {% endblock %}

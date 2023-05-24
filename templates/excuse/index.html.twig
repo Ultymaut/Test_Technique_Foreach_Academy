@@ -4,6 +4,30 @@
 
 {% block body %}
 
-<h1> Excuse de dev </h1>
+<div class="row" >
+<h1 class="text-center mt-4 text-white"> Excuse de dev </h1>
+        <div class="col mt-4 justify-content-center d-flex">
+            <button onclick="showExcuse()" class="btn btn-outline-primary ">Afficher une excuse</button>
+        </div>
+</div>
+    <div class="mt-4">
+        <p id="excuse" class="text-center text-white"></p>
+    </div>
+{% endblock %}
 
+{% block javascripts %}
+    <script>
+
+        function showExcuse() {
+            fetch('/random')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("excuse").innerHTML = data.message;
+                });
+        }
+        // Met à jour la page afin d'aller rechercher une excuse aléatoire dans la bdd puis l'afficher chaque fois que le bouton est cliqué
+        document.querySelector('button').addEventListener('click', function() {
+            showExcuse();
+        });
+    </script>
 {% endblock %}
