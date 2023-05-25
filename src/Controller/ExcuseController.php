@@ -21,16 +21,13 @@ class ExcuseController extends AbstractController
 
     /**
      * @param ExcuseRepository $excuseRepository
-     * @param PaginatorInterface $paginator
-     * @param Request $request
      * @return Response
      * Controller pour la page index
      */
     #[Route('/', name: 'app_excuse_index', methods: ['GET'])]
-    public function index(ExcuseRepository $excuseRepository, PaginatorInterface $paginator, Request $request): Response
+    public function index(ExcuseRepository $excuseRepository): Response
     {
         $excuse=$excuseRepository->findAll();
-
 
         return $this->render('excuse/index.html.twig', [
             "excuse"=>$excuse,
@@ -57,6 +54,7 @@ class ExcuseController extends AbstractController
         return new JsonResponse([
             'message' => $excuse->getMessage()
         ]);
+
     }
 
     /**
