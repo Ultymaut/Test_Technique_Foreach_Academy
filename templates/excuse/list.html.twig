@@ -63,8 +63,17 @@
             </div>
         </div>
     </div>
-    <div class="container">
-    {#  <h4> Il y à {{ excuse.getTotalItemCount }} excuses</h4>#}
+    {% for message in app.flashes('success') %}
+        <div class="justify-content-center d-flex">
+            <div class="alert alert-success mt-4 justify-content-center d-flex" style="width: 50%; height: 50%" >
+                <h5>
+                    {{ message }}
+                </h5>
+            </div>
+        </div>
+    {% endfor %}
+    <div class="container text-center">
+    <h4> Il y à {{total}} excuses</h4>
         <table class="display table table-hover" id="myTable">
             <thead>
                 <tr class="table-light">
@@ -73,9 +82,10 @@
                     <th class="table-dark text-center"> MESSAGE </th>
                     <th class="table-dark text-center"> ACTION</th>
                 </tr>
-
+{# Boucle pour rechercher/afficher toute les excuses au sein de la table excuse #}
     {% for excuse in excuse %}
             <tbody class="">
+            {# Si l'id est divible par 2 ca prend tel couleur sinon ca en prend une autre #}
             {% if excuse.id is divisible by (2) %}
                 <tr style="background-color:#FFF">
                     <td class="text-center"> {{excuse.httpcode}}</td>

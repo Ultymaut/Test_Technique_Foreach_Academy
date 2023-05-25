@@ -19,6 +19,13 @@ use Symfony\Component\Routing\Annotation\Route;
 class ExcuseController extends AbstractController
 {
 
+    /**
+     * @param ExcuseRepository $excuseRepository
+     * @param PaginatorInterface $paginator
+     * @param Request $request
+     * @return Response
+     * Controller pour la page index
+     */
     #[Route('/', name: 'app_excuse_index', methods: ['GET'])]
     public function index(ExcuseRepository $excuseRepository, PaginatorInterface $paginator, Request $request): Response
     {
@@ -31,8 +38,11 @@ class ExcuseController extends AbstractController
     }
 
     /**
-     * @throws NonUniqueResultException
+     * @param ManagerRegistry $doctrine
+     * @return JsonResponse
      * @throws NoResultException
+     * @throws NonUniqueResultException
+     * Controller qui est relié a la page index est qui permet de chercher de maniere random les données au sein de la table
      */
     #[Route('/excuse/random', name: 'app_excuse_rand', methods: ['GET'])]
     public function random(ManagerRegistry $doctrine){
@@ -49,6 +59,10 @@ class ExcuseController extends AbstractController
         ]);
     }
 
+    /**
+     * @return Response
+     * Simple controller de la page lost avec un refresh qui renvoie au bout de 5 secondes vers la page index
+     */
     #[Route('/lost', name: 'app_excuse_lost' )]
     public function lost(): Response
     {
@@ -57,6 +71,12 @@ class ExcuseController extends AbstractController
         return  $this->render('excuse/lost.html.twig', []);
     }
 
+    /**
+     * @param int $http_code
+     * @param ManagerRegistry $doctrine
+     * @return Response
+     * Controller qui permet la recherche d'une excuse par son code http_code depuis l'url avec un message d'erreur personnalisé
+     */
     #[Route('/excuse/code/{http_code}', name: 'app_excuse' , methods: ['GET'])]
     public function show(int $http_code,ManagerRegistry $doctrine): Response
     {
@@ -78,9 +98,11 @@ class ExcuseController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $manager
      * @return Response
+     * Controller pour la page list qui montre toutes les excuses au sein d'un tableau on y retrouve aussi la création du formulaire pour le modal de création d'excuse et un total des excuses
+        Avec message de réussite de la création
      */
     #[Route('/excuse/list', name: 'app_excuse_list' , methods: ['GET','POST'])]
-    public function showAll(ExcuseRepository $excuseRepository,PaginatorInterface $paginator, Request $request,EntityManagerInterface $manager): Response
+    public function showAll(ExcuseRepository $excuseRepository,PaginatorInterface $paginator, Request $request,EntityManagerInterface $manager,ManagerRegistry $doctrine): Response
     {
         $new = new Excuse();
         $form = $this->createForm(ExcuseNewType::class, $new);
@@ -105,9 +127,15 @@ class ExcuseController extends AbstractController
             10,
         );
 
+       $query= $doctrine->getRepository(Excuse::class);
+       $total = $query->createQueryBuilder('e')
+           ->select('count(e)')
+           ->getQuery()
+           ->getSingleScalarResult();
         return $this->render('excuse/list.html.twig', [
             'excuse' => $excuse,
             'form'=>$form->createView(),
+            'total' => $total,
         ]);
     }
 
@@ -115,6 +143,7 @@ class ExcuseController extends AbstractController
      * @param Request $request
      * @param EntityManagerInterface $manager
      * @return Response
+     * Controller pour une page de créarion d'excuse en plus du modal
      */
     #[Route('/excuse/new', name: 'app_excuse_new' , methods: ['GET','POST'])]
     public function new(Request $request, EntityManagerInterface $manager): Response
@@ -128,7 +157,6 @@ class ExcuseController extends AbstractController
             $new = $form->getData();
             $manager->persist($new);
             $manager->flush();
-            // do some sort of processing
             $this->addFlash(
                 'success',
                 'l\'excuse à été créé avec succès !'
@@ -144,6 +172,14 @@ class ExcuseController extends AbstractController
             ]);
 
     }
+
+    /**
+     * @param Excuse $excuse
+     * @param Request $request
+     * @param EntityManagerInterface $manager
+     * @return Response
+     * Controller pour la page avec le form de modification plus message de réussite
+     */
     #[Route ('/excuse/modif/{id}', name : 'excuse_modif' , methods: ['GET', 'POST'])]
     public function edit(Excuse $excuse, Request $request, EntityManagerInterface $manager) : Response
     {
@@ -156,7 +192,6 @@ class ExcuseController extends AbstractController
             $excuse = $form->getData();
             $manager->persist($excuse);
             $manager->flush();
-            // do some sort of processing
             $this->addFlash(
                 'success',
                 'L\'excuse à été modifier avec succès !'
@@ -170,6 +205,13 @@ class ExcuseController extends AbstractController
                 'form' => $form->createView()
             ]);
     }
+
+    /**
+     * @param EntityManagerInterface $manager
+     * @param Excuse $excuse
+     * @return Response
+     * Controller qui permet la supression d'une excuse par sont id avec message d'erreur ou de réussite
+     */
     #[Route('/excuse/delete/{id}' , 'excuse_delete', methods: ['GET'])]
     public function delete(EntityManagerInterface $manager , Excuse $excuse) :Response
     {
